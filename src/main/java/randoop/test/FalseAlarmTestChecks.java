@@ -1,7 +1,7 @@
 package randoop.test;
 
-import java.util.LinkedHashMap;
-import java.util.Map;
+import java.util.Collections;
+import java.util.Set;
 
 /** Added to handle identification of false alarms from failed preconditions. */
 public class FalseAlarmTestChecks extends InvalidChecks {
@@ -18,12 +18,12 @@ public class FalseAlarmTestChecks extends InvalidChecks {
   }
 
   @Override
-  public Map<Check, Boolean> checks() {
-    Map<Check, Boolean> mp = new LinkedHashMap<>();
+  public Set<Check> checks() {
     if (check != null) {
-      mp.put(check, false);
+      return Collections.singleton(check);
+    } else {
+      return Collections.emptySet();
     }
-    return mp;
   }
 
   @Override
@@ -50,12 +50,12 @@ public class FalseAlarmTestChecks extends InvalidChecks {
   }
 
   @Override
-  public TestChecks<InvalidChecks> commonChecks(InvalidChecks checks) {
+  public InvalidChecks commonChecks(InvalidChecks checks) {
     if (!(checks instanceof FalseAlarmTestChecks)) {
       throw new IllegalArgumentException("Must compare with an InvalidChecks object");
     }
     FalseAlarmTestChecks ic = (FalseAlarmTestChecks) checks;
-    TestChecks<InvalidChecks> common = new InvalidChecks();
+    InvalidChecks common = new InvalidChecks();
     if (this.check != null && check.equals(ic.check)) {
       common.add(check);
     }
