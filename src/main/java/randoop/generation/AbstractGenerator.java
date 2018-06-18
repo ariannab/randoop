@@ -1,6 +1,10 @@
 package randoop.generation;
 
+import java.io.FileWriter;
+import java.io.IOException;
+import java.io.PrintStream;
 import java.util.ArrayList;
+import java.util.EnumMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
@@ -56,6 +60,78 @@ public abstract class AbstractGenerator {
   /** When the generator started (millisecond-based system timestamp). */
   private long startTime = -1;
 
+  private EnumMap<GenInputsAbstract.BehaviorType, EnumMap<GenInputsAbstract.BehaviorType, Integer>>
+      transitionCountMap = new EnumMap<>(GenInputsAbstract.BehaviorType.class);
+
+  private FileWriter transitionLog;
+
+  private void handleConditionTransition(ExecutableSequence eSeq) {
+    // count transitions
+    addConditionTransition(eSeq);
+
+    if (transitionLog != null) {
+      if (eSeq.standardClassification != eSeq.conditionClassification) {
+        try {
+          transitionLog.write(
+              "transition: "
+                  + eSeq.standardClassification.name()
+                  + " => "
+                  + eSeq.conditionClassification
+                  + Globals.lineSep);
+          transitionLog.write(eSeq.toCodeString() + Globals.lineSep);
+          transitionLog.write("-----------------------" + Globals.lineSep);
+          transitionLog.flush();
+        } catch (IOException e) {
+          throw new Error("error while writing transition log: " + transitionLog);
+        }
+      }
+    }
+  }
+
+  private void addConditionTransition(ExecutableSequence eSeq) {
+    EnumMap<GenInputsAbstract.BehaviorType, Integer> countMap =
+        transitionCountMap.get(eSeq.standardClassification);
+    if (countMap == null) {
+      countMap = new EnumMap<>(GenInputsAbstract.BehaviorType.class);
+    }
+    Integer count = countMap.get(eSeq.conditionClassification);
+    if (count == null) {
+      countMap.put(eSeq.conditionClassification, 1);
+    } else {
+      countMap.put(eSeq.conditionClassification, count + 1);
+    }
+    transitionCountMap.put(eSeq.standardClassification, countMap);
+  }
+
+  public void printTransitionTable(PrintStream out) {
+    out.printf("Classification");
+    for (GenInputsAbstract.BehaviorType behaviorType : GenInputsAbstract.BehaviorType.values()) {
+      out.printf(",%s", behaviorType.name());
+    }
+    out.printf("%n");
+    for (GenInputsAbstract.BehaviorType type : GenInputsAbstract.BehaviorType.values()) {
+      out.printf("%s", type.name());
+      EnumMap<GenInputsAbstract.BehaviorType, Integer> transitionMap = transitionCountMap.get(type);
+      if (transitionMap == null) {
+        for (GenInputsAbstract.BehaviorType conditionType :
+            GenInputsAbstract.BehaviorType.values()) {
+          out.printf(",%d", 0);
+        }
+      } else {
+        for (GenInputsAbstract.BehaviorType conditionType :
+            GenInputsAbstract.BehaviorType.values()) {
+          Integer count = transitionMap.get(conditionType);
+          if (count != null) {
+            out.printf(",%d", (int) count);
+          } else {
+            out.printf(",%d", 0);
+          }
+        }
+      }
+      out.printf("%n");
+    }
+  }
+
   /**
    * Elapsed time since the generator started.
    *
@@ -73,7 +149,7 @@ public abstract class AbstractGenerator {
    * generate sequences. In other words, statements specifies the universe of operations from which
    * sequences are generated.
    */
-  protected final List<TypedOperation> operations;
+  public List<TypedOperation> operations;
 
   /** Container for execution visitors used during execution of sequences. */
   protected ExecutionVisitor executionVisitor;
@@ -124,10 +200,13 @@ public abstract class AbstractGenerator {
 
   protected OperationHistoryLogInterface operationHistory;
 
+  private int returnPostConditionCount = 0;
+  private int returnPostConditionFailureCount = 0;
+
   /**
    * Constructs a generator with the given parameters.
    *
-   * @param operations statements (e.g. methods and constructors) used to create sequences. Cannot
+   * @param operations Statements (e.g. methods and constructors) used to create sequences. Cannot
    *     be null.
    * @param limits maximum time and number of sequences to generate/output
    * @param componentManager the component manager to use to store sequences during component-based
@@ -142,7 +221,8 @@ public abstract class AbstractGenerator {
       GenInputsAbstract.Limits limits,
       ComponentManager componentManager,
       IStopper stopper,
-      RandoopListenerManager listenerManager) {
+      RandoopListenerManager listenerManager,
+      FileWriter transitionLog) {
     assert operations != null;
 
     this.limits = limits;
@@ -158,6 +238,7 @@ public abstract class AbstractGenerator {
 
     this.stopper = stopper;
     this.listenerMgr = listenerManager;
+    this.transitionLog = transitionLog;
     operationHistory = new DefaultOperationHistoryLogger();
     outRegressionSeqs = new ArrayList<>();
     outErrorSeqs = new ArrayList<>();
@@ -285,6 +366,13 @@ public abstract class AbstractGenerator {
       progressDisplay.start();
     }
 
+    if (Log.isLoggingOn()) {
+      Log.logPrintf("Initial sequences (seeds):%n");
+      for (Sequence s : componentManager.getAllGeneratedSequences()) {
+        Log.logPrintf("%s%n", s.toString());
+      }
+    }
+
     // Notify listeners that exploration is starting.
     if (listenerMgr != null) {
       listenerMgr.explorationStart();
@@ -321,6 +409,8 @@ public abstract class AbstractGenerator {
       }
 
       num_sequences_generated++;
+
+      handleConditionTransition(eSeq);
 
       if (outputTest.test(eSeq)) {
         // Classify the sequence

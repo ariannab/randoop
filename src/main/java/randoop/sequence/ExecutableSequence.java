@@ -18,8 +18,11 @@ import randoop.condition.ExpectedOutcomeTable;
 import randoop.main.GenInputsAbstract;
 import randoop.operation.TypedOperation;
 import randoop.test.Check;
+import randoop.test.FalseAlarmTestChecks;
 import randoop.test.InvalidChecks;
 import randoop.test.InvalidValueCheck;
+import randoop.test.PostConditionFailureChecks;
+import randoop.test.RegressionChecks;
 import randoop.test.TestCheckGenerator;
 import randoop.test.TestChecks;
 import randoop.types.ReferenceType;
@@ -96,6 +99,9 @@ public class ExecutableSequence {
 
   /* Maps a value to the set of variables that hold it. */
   private IdentityMultiMap<Object, Variable> variableMap = new IdentityMultiMap<>();
+
+  public GenInputsAbstract.BehaviorType standardClassification;
+  public GenInputsAbstract.BehaviorType conditionClassification;
 
   /**
    * Create an executable sequence that executes the given sequence.
@@ -244,7 +250,6 @@ public class ExecutableSequence {
    *         <li>execute the i-th statement, using reflection
    *         <li>call {@code visitor.visitAfter(this, i)}
    *       </ul>
-   *
    *   <li>For the last statement, check its specifications (pre-, post-, and throws-conditions).
    * </ul>
    *
@@ -278,6 +283,11 @@ public class ExecutableSequence {
       visitor.initialize(this);
 
       this.reset();
+
+      TestChecks<?> conditionChecks = new RegressionChecks();
+      TestCheckGenerator expected = null;
+
+      int statementIndex = -1;
 
       for (int i = 0; i < this.sequence.size(); i++) {
 
@@ -336,8 +346,30 @@ public class ExecutableSequence {
       // This is the only client call to generateTestChecks().
       checks = gen.generateTestChecks(this);
 
+      standardClassification = classify(checks);
+
+      if (!conditionChecks.hasInvalidBehavior()) {
+        if (expected != null) {
+          conditionChecks = expected.generateTestChecks(this);
+        }
+      }
+
+      conditionClassification = classify(conditionChecks);
+
+      checks = conditionChecks;
+
     } finally {
       exectime = System.nanoTime() - startTime;
+    }
+  }
+
+  private GenInputsAbstract.BehaviorType classify(TestChecks<?> checks) {
+    if (checks.hasInvalidBehavior()) {
+      return GenInputsAbstract.BehaviorType.INVALID;
+    } else if (checks.hasErrorBehavior()) {
+      return GenInputsAbstract.BehaviorType.ERROR;
+    } else {
+      return GenInputsAbstract.BehaviorType.EXPECTED;
     }
   }
 
@@ -661,6 +693,14 @@ public class ExecutableSequence {
    */
   public boolean hasInvalidBehavior() {
     return checks != null && checks.hasInvalidBehavior();
+  }
+
+  public boolean hasFalseAlarmBehavior() {
+    return checks != null && (checks instanceof FalseAlarmTestChecks) && checks.hasChecks();
+  }
+
+  public boolean hasPostConditionFailure() {
+    return checks != null && (checks instanceof PostConditionFailureChecks) && checks.hasChecks();
   }
 
   /**

@@ -267,8 +267,8 @@ public class TestFilteringTest {
             new LinkedHashSet<TypedOperation>(),
             new GenInputsAbstract.Limits(),
             componentMgr,
-            null,
-            listenerMgr);
+            listenerMgr,
+            null);
     GenTests genTests = new GenTests();
     Predicate<ExecutableSequence> isOutputTest =
         genTests.createTestOutputPredicate(new HashSet<Sequence>(), new HashSet<Class<?>>(), null);

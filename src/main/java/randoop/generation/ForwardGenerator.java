@@ -1,5 +1,6 @@
 package randoop.generation;
 
+import java.io.FileWriter;
 import java.util.ArrayList;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -78,8 +79,9 @@ public class ForwardGenerator extends AbstractGenerator {
       Set<TypedOperation> observers,
       GenInputsAbstract.Limits limits,
       ComponentManager componentManager,
-      RandoopListenerManager listenerManager) {
-    this(operations, observers, limits, componentManager, null, listenerManager);
+      RandoopListenerManager listenerManager,
+      FileWriter transitionLog) {
+    this(operations, observers, limits, componentManager, null, listenerManager, transitionLog);
   }
 
   public ForwardGenerator(
@@ -88,8 +90,9 @@ public class ForwardGenerator extends AbstractGenerator {
       GenInputsAbstract.Limits limits,
       ComponentManager componentManager,
       IStopper stopper,
-      RandoopListenerManager listenerManager) {
-    super(operations, limits, componentManager, stopper, listenerManager);
+      RandoopListenerManager listenerManager,
+      FileWriter transitionLog) {
+    super(operations, limits, componentManager, stopper, listenerManager, transitionLog);
 
     this.observers = observers;
     this.allSequences = new LinkedHashSet<>();

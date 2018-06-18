@@ -424,8 +424,8 @@ public class TestClassificationTest {
             new LinkedHashSet<TypedOperation>(),
             new GenInputsAbstract.Limits(),
             componentMgr,
-            null,
-            listenerMgr);
+            listenerMgr,
+            null);
     Predicate<ExecutableSequence> isOutputTest = new AlwaysTrue<>();
     gen.setTestPredicate(isOutputTest);
 

@@ -600,6 +600,9 @@ public abstract class GenInputsAbstract extends CommandHandler {
   @Option("Filename for code to include in After-annotated method of test classes")
   public static String junit_after_each = null;
 
+  @Option("Name of file to write sequence classification information")
+  public static String transition_dir = null;
+
   /**
    * Name of file containing code text to be added to the <a
    * href="http://junit.sourceforge.net/javadoc/org/junit/BeforeClass.html">{@code @BeforeClass}</a>-annotated

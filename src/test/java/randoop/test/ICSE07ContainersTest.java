@@ -113,6 +113,7 @@ public class ICSE07ContainersTest {
                 120 /* 2 minutes */, Integer.MAX_VALUE, Integer.MAX_VALUE, Integer.MAX_VALUE),
             componentMgr,
             stopper,
+            null,
             null);
     explorer.setTestCheckGenerator(new DummyCheckGenerator());
     explorer.createAndClassifySequences();
