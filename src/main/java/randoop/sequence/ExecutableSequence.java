@@ -285,7 +285,7 @@ public class ExecutableSequence {
       this.reset();
 
       TestChecks<?> conditionChecks = new RegressionChecks();
-      TestCheckGenerator expected = null;
+//      TestCheckGenerator expected = null;
 
       int statementIndex = -1;
 
@@ -349,8 +349,8 @@ public class ExecutableSequence {
       standardClassification = classify(checks);
 
       if (!conditionChecks.hasInvalidBehavior()) {
-        if (expected != null) {
-          conditionChecks = expected.generateTestChecks(this);
+        if (gen != null) {
+          conditionChecks = gen.generateTestChecks(this);
         }
       }
 
