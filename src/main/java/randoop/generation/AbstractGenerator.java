@@ -91,6 +91,10 @@ public abstract class AbstractGenerator {
   private void addConditionTransition(ExecutableSequence eSeq) {
     EnumMap<GenInputsAbstract.BehaviorType, Integer> countMap =
         transitionCountMap.get(eSeq.standardClassification);
+
+    System.out.println("\n\n");
+    System.out.println(eSeq.standardClassification.toString());
+
     if (countMap == null) {
       countMap = new EnumMap<>(GenInputsAbstract.BehaviorType.class);
     }
