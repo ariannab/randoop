@@ -19,8 +19,6 @@ import randoop.main.GenInputsAbstract;
 import randoop.operation.TypedOperation;
 import randoop.test.Check;
 import randoop.test.FalseAlarmTestChecks;
-import randoop.test.InvalidChecks;
-import randoop.test.InvalidValueCheck;
 import randoop.test.PostConditionFailureChecks;
 import randoop.test.RegressionChecks;
 import randoop.test.TestCheckGenerator;
@@ -250,6 +248,7 @@ public class ExecutableSequence {
    *         <li>execute the i-th statement, using reflection
    *         <li>call {@code visitor.visitAfter(this, i)}
    *       </ul>
+   *
    *   <li>For the last statement, check its specifications (pre-, post-, and throws-conditions).
    * </ul>
    *
@@ -301,10 +300,10 @@ public class ExecutableSequence {
             // Phase 1 of specification checking:  evaluate guards of the specifications before the
             // call.
             ExpectedOutcomeTable outcomeTable = operation.checkPrestate(inputValues);
-            if (outcomeTable.isInvalidCall()) {
-              checks = new InvalidChecks(new InvalidValueCheck(this, i));
-              return;
-            }
+            //TODO the previous statements will not classify invalid checks but just return. Fix this.
+            //            if (outcomeTable.isInvalidCall()) {
+            //              checks = new InvalidChecks(new InvalidValueCheck(this, i));
+            //            }
             expected = outcomeTable.addPostCheckGenerator(gen);
           }
         }
@@ -344,15 +343,16 @@ public class ExecutableSequence {
 
       // Phase 2 of specification checking: check for expected behavior after the call.
       // This is the only client call to generateTestChecks().
+
       checks = gen.generateTestChecks(this);
 
       standardClassification = classify(checks);
 
-      if (!conditionChecks.hasInvalidBehavior()) {
-        if (expected != null) {
-          conditionChecks = expected.generateTestChecks(this);
-        }
+      //      if (!conditionChecks.hasInvalidBehavior()) {
+      if (expected != null) {
+        conditionChecks = expected.generateTestChecks(this);
       }
+      //      }
 
       conditionClassification = classify(conditionChecks);
 
